@@ -71,7 +71,7 @@ validateConfig() {
 
 # run the indiivual backup for each bucket config
 runBackups() {
-    for CFGFILE in config/*.sh; 
+    for CFGFILE in $SCRIPT_HOME/config/*.sh; 
     do 
         source $CFGFILE
         backup
