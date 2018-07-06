@@ -1,0 +1,30 @@
+# get the excludes out in front to prevent rclone from finding things we really don't want (like Trash in .local)
+- backup/*.log
+- .local/*
+- .local/**
+
+# normal folders
++ backup/*
++ Documents/*
++ Photos/*
++ Pictures/*
+
+# dot dirs
++ .config/*
++ .gnupg/**
++ .ssh/*
++ .vim/*
+
+# dot files
++ .bashrc
++ .gitconfig
++ .profile
++ .vimrc
+
+# home files
++ setup_notes.txt
++ gpg.pubkey_armor
+
+# and nothing else
+- *
+- **
