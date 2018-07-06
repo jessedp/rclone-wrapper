@@ -1,19 +1,18 @@
 # get the excludes out in front to prevent rclone from finding things we really don't want (like Trash in .local)
-- backup/*.log
-- .local/*
+- backup/logs/*.log
 - .local/**
+- .config/**
 
 # normal folders
-+ backup/*
-+ Documents/*
-+ Photos/*
-+ Pictures/*
++ backup/**
++ Documents/**
++ Photos/**
++ Pictures/**
 
 # dot dirs
-+ .config/*
 + .gnupg/**
 + .ssh/*
-+ .vim/*
++ .vim/**
 
 # dot files
 + .bashrc

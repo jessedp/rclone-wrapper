@@ -1,7 +1,7 @@
 + lsb-release
-+ apache2/*
-+ nginx/*
-+ supervisor/*
++ apache2/**
++ nginx/**
++ supervisor/**
 
 # and nothing else
 - *
