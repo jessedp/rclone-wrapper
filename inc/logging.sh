@@ -9,7 +9,9 @@ touch $LOGFILE
 # Logs to both the screen and to rclone's log file (in the same format as rclone)
 log() {
     date=$(date +'%Y/%m/%d %H:%M:%S')
-    echo -e "$date $1"
+    if [ $CRON != 1 ]; then
+        echo -e "$date $1"
+    fi
     echo -e "$date **SH**: $1" >> $LOGFILE
 }
 
