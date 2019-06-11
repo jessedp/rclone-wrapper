@@ -120,12 +120,18 @@ notifyFailure() {
         log "curl not found, can't send notifications!"
     elif [ ! -z  $MAILGUN_APIKEY ]; then
         log "Attempting to notify about backup problem..."
-        curl -s --user "api:$MAILGUN_APIKEY" \
+        RESULT=`curl -o /dev/null -s -w "%{http_code}\n" --user "api:$MAILGUN_APIKEY" \
             https://api.mailgun.net/v3/$MAILGUN_DOMAIN/messages \
             -F from=$MAILGUN_FROM \
             -F to=$MAILGUN_TO \
             -F subject="$MAILGUN_SUBJECT" \
-            -F text="$(cat $LOGFILE)" >> $LOGFILE
+            -F text="$(cat $LOGFILE)" `
+
+        if [[ $RESULT == 2* ]]; then
+            log "Error email sent"
+        else
+            log "UNABLE to send error email! HTTP RESP: $RESULT"
+        fi
     else
         log "Problem with backup, but no notification option configured..."
     fi
