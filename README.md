@@ -35,6 +35,7 @@ It's quite opinionated, but could give someone a structure to (mis)use for their
 - configure it (as below)
 
 ### running ###
+0. do the configuration stuff below
 1. exec the rclone_backup.sh - `./rclone_backup.sh` or `sh rclone_backup.sh`
 2. set it up as a cron job if you'd like (it will figure out its own root path)
 
