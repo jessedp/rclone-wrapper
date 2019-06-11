@@ -23,10 +23,10 @@ USE_SUDO=1
 # MailGun Setup
 # If an API Key is entered, the script automatically tries to send an email on failure.
 #############################################
-MAILGUN_DOMAIN="lastseen.me"
-MAILGUN_APIKEY="key-5db9c414d9aa7703e05a0c2b33fdfbf2"
-MAILGUN_FROM="support@lastseen.me"
-MAILGUN_TO="jessedp@gmail.com"
+MAILGUN_DOMAIN="example.net"
+MAILGUN_APIKEY="key-MYKEY"
+MAILGUN_FROM="support@example.org"
+MAILGUN_TO="me@example.com"
 MAILGUN_SUBJECT="$COMPUTER_NAME / $USER_NAME backup problem!"
 
 
