@@ -19,7 +19,7 @@ shouldRun() {
 # make sure we have a network connection, otherwise our purpose for this is futile
 checkNetwork() {
     log "Checking network connectivity..."
-    if ping -q -c 4 -W w google.com >/dev/null; then
+    if ping -q -c 4 -W 5 google.com >/dev/null; then
         NET_UP=true
         log "Network up."
     else
