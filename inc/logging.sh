@@ -17,7 +17,7 @@ log() {
 
 cleanupLogs() {
     REMOVE=$(expr $(ls $LOGDIR/ -1rt | wc -l) - $LOGS_TO_KEEP)
-    if [ "$REMOVE" > 1 ]; then
+    if [ "$REMOVE" -gt 0 ]; then
         for i in $(ls $LOGDIR/ -1rt | head -n $REMOVE);
         do
             rm "$LOGDIR/$i";
