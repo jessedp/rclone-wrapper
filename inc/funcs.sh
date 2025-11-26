@@ -30,12 +30,10 @@ checkNetwork() {
 
 # used by validateConfig - wipes out the bucket vars to make sure we're validating each one on its own
 resetConfig() {
-    declare -a fields=("FILTER_FILE" "SOURCE_PATH" "DESTINATION_PATH" "ARCHIVE_DESTINATION_PATH")
-    
-    for field in "${fields[@]}"
-    do
-        eval "$field"=""
-    done
+    FILTER_FILE=""
+    SOURCE_PATH=""
+    DESTINATION_PATH=""
+    ARCHIVE_DESTINATION_PATH=""
 }
 
 # validate - as in make sure they are filled in - the bucket vars we're going to use.
