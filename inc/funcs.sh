@@ -3,13 +3,21 @@ shouldRun() {
     if [ -e "$LASTFILE" ]; then
 
         NOW=$(date +%s)
-        LAST=$(stat -c %Y "$LASTFILE")
+        local LAST
 
-        DIFF=$(expr $NOW - $LAST)
-        HR_DIFF=$(expr $DIFF / 60 / 60)
-        if [ $HR_DIFF -lt $MIN_HOURS ]; then
-            echo "Only $HR_DIFF hours have elapsed since the last backup. Waiting for at least $(expr $MIN_HOURS - $HR_DIFF) hours before running again."
-            # this is already created, useless, and screws with cleaning up log files.
+        # Determine OS for stat command
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+            # macOS (BSD stat)
+            LAST=$(stat -f %m "$LASTFILE")
+        else
+            # Linux and others (GNU stat)
+            LAST=$(stat -c %Y "$LASTFILE")
+        fi
+
+        DIFF=$(expr "$NOW" - "$LAST")
+        HR_DIFF=$(expr "$DIFF" / 60 / 60)
+        if [ "$HR_DIFF" -lt "$MIN_HOURS" ]; then
+            echo "Only $HR_DIFF hours have elapsed since the last backup. Waiting for at least $(expr "$MIN_HOURS" - "$HR_DIFF") hours before running again."
             rm "$LOGFILE"
             exit
         fi
