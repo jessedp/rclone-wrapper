@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+
 
 # Don't change this! It allows all our scripts to base include, log, etc. paths off the
 # directory the backup script lives in to keep everything contained.
