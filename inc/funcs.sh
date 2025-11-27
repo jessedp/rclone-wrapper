@@ -1,16 +1,24 @@
 # See if it's time to do a full run or bail
 shouldRun() {
-    if [ -e $LASTFILE ]; then
+    if [ -e "$LASTFILE" ]; then
 
         NOW=$(date +%s)
-        LAST=$(stat -c %Y $LASTFILE)
+        local LAST
 
-        DIFF=$(expr $NOW - $LAST)
-        HR_DIFF=$(expr $DIFF / 60 / 60)
-        if [ $HR_DIFF -lt $MIN_HOURS ]; then
-            echo "Only $HR_DIFF hours have elapsed since the last backup. Waiting for at least $(expr $MIN_HOURS - $HR_DIFF) hours before running again."
-            # this is already created, useless, and screws with cleaning up log files.
-            rm $LOGFILE
+        # Determine OS for stat command
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+            # macOS (BSD stat)
+            LAST=$(stat -f %m "$LASTFILE")
+        else
+            # Linux and others (GNU stat)
+            LAST=$(stat -c %Y "$LASTFILE")
+        fi
+
+        DIFF=$(expr "$NOW" - "$LAST")
+        HR_DIFF=$(expr "$DIFF" / 60 / 60)
+        if [ "$HR_DIFF" -lt "$MIN_HOURS" ]; then
+            echo "Only $HR_DIFF hours have elapsed since the last backup. Waiting for at least $(expr "$MIN_HOURS" - "$HR_DIFF") hours before running again."
+            rm "$LOGFILE"
             exit
         fi
     fi
@@ -19,7 +27,7 @@ shouldRun() {
 # make sure we have a network connection, otherwise our purpose for this is futile
 checkNetwork() {
     log "Checking network connectivity..."
-    if ping -q -c 4 -W 5 google.com >/dev/null; then
+    if ping -q -c 4 -W 5 google.com >/dev/null 2>&1; then
         NET_UP=true
         log "Network up."
     else
@@ -30,21 +38,17 @@ checkNetwork() {
 
 # used by validateConfig - wipes out the bucket vars to make sure we're validating each one on its own
 resetConfig() {
-    declare -a fields=("FILTER_FILE" "SOURCE_PATH" "DESTINATION_PATH" "ARCHIVE_DESTINATION_PATH")
-    
-    for field in "${fields[@]}"
-    do
-        eval "$field"=""
-    done
+    FILTER_FILE=""
+    SOURCE_PATH=""
+    DESTINATION_PATH=""
+    ARCHIVE_DESTINATION_PATH=""
 }
 
 # validate - as in make sure they are filled in - the bucket vars we're going to use.
 validateConfig() {
-    resetConfig
-    BADCFG=0
-    for CFGFILE in $SCRIPT_HOME/config/*.sh; 
+    for CFGFILE in "$SCRIPT_HOME"/config/*.sh;
     do 
-        source $CFGFILE
+        source "$CFGFILE"
 
         echo "Validating required fields in: $CFGFILE"
         
@@ -71,9 +75,9 @@ validateConfig() {
 
 # run the indiivual backup for each bucket config
 runBackups() {
-    for CFGFILE in $SCRIPT_HOME/config/*.sh; 
+    for CFGFILE in "$SCRIPT_HOME"/config/*.sh; 
     do 
-        source $CFGFILE
+        source "$CFGFILE"
         backup
     done
     finish
@@ -91,10 +95,10 @@ backup() {
 
     (set -x; \
     /usr/bin/time -v -o $LOGFILE -a \
-        $NICE_CMD -n $NICE rclone sync $SOURCE_PATH $DESTINATION_PATH \
+        $NICE_CMD -n "$NICE" rclone sync "$SOURCE_PATH" "$DESTINATION_PATH" \
         --delete-excluded \
-        --filter-from $SCRIPT_HOME/config/$FILTER_FILE \
-        --log-file=$LOGFILE \
+        --filter-from "$SCRIPT_HOME/config/$FILTER_FILE" \
+        --log-file="$LOGFILE" \
         --log-level INFO \
         --track-renames \
         --skip-links \
@@ -118,14 +122,14 @@ backup() {
 notifyFailure() {
     if [ -z "$(which curl)" ]; then
         log "curl not found, can't send notifications!"
-    elif [ ! -z  $MAILGUN_APIKEY ]; then
+    elif [ -n "$MAILGUN_APIKEY" ]; then
         log "Attempting to notify about backup problem..."
         RESULT=`curl -o /dev/null -s -w "%{http_code}\n" --user "api:$MAILGUN_APIKEY" \
-            https://api.mailgun.net/v3/$MAILGUN_DOMAIN/messages \
+            https://api.mailgun.net/v3/"$MAILGUN_DOMAIN"/messages \
             -F from=$MAILGUN_FROM \
             -F to=$MAILGUN_TO \
             -F subject="$MAILGUN_SUBJECT" \
-            -F text="$(cat $LOGFILE)" `
+            -F text="$(cat "$LOGFILE")" `
 
         if [[ $RESULT == 2* ]]; then
             log "Error email sent"
@@ -139,7 +143,7 @@ notifyFailure() {
 
 
 finish() {
-    touch $LASTFILE
+    touch "$LASTFILE"
     if [ $FAILURE == 1 ]; then
         notifyFailure
     fi

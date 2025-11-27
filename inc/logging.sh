@@ -1,8 +1,8 @@
 # Setup logging
 LOGDIR="$SCRIPT_HOME/logs"
 LOGFILE="$LOGDIR/backup_$(date +'%Y%m%d_%H%M%S').log"
-mkdir -p $LOGDIR
-touch $LOGFILE
+mkdir -p "$LOGDIR"
+touch "$LOGFILE"
 
 
 
@@ -12,18 +12,18 @@ log() {
     if [ "$CRON" != "1" ]; then
         echo -e "$date $1"
     fi
-    echo -e "$date **SH**: $1" >> $LOGFILE
+    echo -e "$date **SH**: $1" >> "$LOGFILE"
 }
 
 cleanupLogs() {
-    REMOVE=$(expr $(ls $LOGDIR/ -1rt | wc -l) - $LOGS_TO_KEEP)
-    if [ "$REMOVE" > 1 ]; then
-        for i in $(ls $LOGDIR/ -1rt | head -n $REMOVE);
+    REMOVE=$(expr $(ls -1rt "$LOGDIR" | wc -l) - $LOGS_TO_KEEP)
+    if [ "$REMOVE" -gt 0 ]; then
+        for i in $(ls -1rt "$LOGDIR" | head -n "$REMOVE");
         do
             rm "$LOGDIR/$i";
         done
         log "Cleaned up $REMOVE old log files, $LOGS_TO_KEEP remain."
     else
-        log "Fewer then $LOGS_TO_KEEP log fils remain, all retained."
+        log "Fewer than $LOGS_TO_KEEP log files remain, all retained."
     fi
 }
