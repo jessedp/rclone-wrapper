@@ -46,8 +46,10 @@ resetConfig() {
 
 # validate - as in make sure they are filled in - the bucket vars we're going to use.
 validateConfig() {
+    BADCFG=0
     for CFGFILE in "$SCRIPT_HOME"/config/*.sh;
     do 
+        resetConfig
         source "$CFGFILE"
 
         echo "Validating required fields in: $CFGFILE"
