@@ -1,2 +1,4 @@
 .lastrun
 logs/
+config/*.sh
+config/*.txt
