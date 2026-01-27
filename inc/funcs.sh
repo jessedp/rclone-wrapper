@@ -17,8 +17,7 @@ shouldRun() {
         DIFF=$(expr "$NOW" - "$LAST")
         HR_DIFF=$(expr "$DIFF" / 60 / 60)
         if [ "$HR_DIFF" -lt "$MIN_HOURS" ]; then
-            echo "Only $HR_DIFF hours have elapsed since the last backup. Waiting for at least $(expr "$MIN_HOURS" - "$HR_DIFF") hours before running again."
-            rm "$LOGFILE"
+            log "Only $HR_DIFF hours have elapsed since the last backup. Waiting for at least $(expr "$MIN_HOURS" - "$HR_DIFF") hours before running again."
             exit
         fi
     fi
