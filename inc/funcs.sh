@@ -98,6 +98,7 @@ backup() {
     (set -x; \
     /usr/bin/time -v -o $LOGFILE -a \
         $NICE_CMD -n "$NICE" rclone sync "$SOURCE_PATH" "$DESTINATION_PATH" \
+        --config "$RCLONE_CONFIG_PATH" \
         --delete-excluded \
         --filter-from "$SCRIPT_HOME/config/$FILTER_FILE" \
         --log-file="$LOGFILE" \

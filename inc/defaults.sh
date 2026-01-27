@@ -18,6 +18,10 @@ LOGS_TO_KEEP=20
 # 0 == No (0 or anything else)
 USE_SUDO=1
 
+# Path to rclone config file
+# Default = "$HOME/.config/rclone/rclone.conf"
+RCLONE_CONFIG_PATH="$HOME/.config/rclone/rclone.conf"
+
 
 #############################################
 # MailGun Setup
