@@ -1,5 +1,10 @@
 # See if it's time to do a full run or bail
 shouldRun() {
+    if [ "$FORCE" == "1" ]; then
+        log "FORCE enabled: skipping last run time check."
+        return
+    fi
+
     if [ -e "$LASTFILE" ]; then
 
         NOW=$(date +%s)

@@ -8,6 +8,10 @@ USER_NAME=$(whoami)
 # Default = 12
 MIN_HOURS=12
 
+# Force run even if MIN_HOURS hasn't passed
+# Default = 0
+FORCE=${FORCE:-0}
+
 # Maximum number of log files to leave around
 # Default = 20
 LOGS_TO_KEEP=20
