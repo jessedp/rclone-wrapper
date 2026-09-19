@@ -135,12 +135,23 @@ notifyFailure() {
         log "curl not found, can't send notifications!"
     elif [ -n "${MAILGUN_APIKEY:-}" ] && [ "$MAILGUN_APIKEY" != "key-MYKEY" ]; then
         log "Attempting to notify about backup problem..."
+        # Body goes via a temp file: a big log inlined as an argument exceeds the
+        # kernel's per-argument limit (128 KiB) and curl never even starts.
+        local BODY
+        BODY=$(mktemp)
+        {
+            echo "Summary ($LOGFILE):"
+            grep -E '\*\*SH\*\*|ERROR|Failed' "$LOGFILE" | tail -n 100
+            echo; echo "--- last 60 log lines ---"
+            tail -n 60 "$LOGFILE"
+        } > "$BODY"
         RESULT=$(curl -o /dev/null -s -w "%{http_code}\n" --user "api:$MAILGUN_APIKEY" \
             https://api.mailgun.net/v3/"$MAILGUN_DOMAIN"/messages \
             -F from="$MAILGUN_FROM" \
             -F to="$MAILGUN_TO" \
             -F subject="$MAILGUN_SUBJECT" \
-            -F text="$(cat "$LOGFILE")" || true)
+            -F "text=<$BODY" || true)
+        rm -f "$BODY"
 
         if [[ $RESULT == 2* ]]; then
             log "Error email sent"
