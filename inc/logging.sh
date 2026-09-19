@@ -16,7 +16,8 @@ log() {
 }
 
 cleanupLogs() {
-    REMOVE=$(expr $(ls -1rt "$LOGDIR" | wc -l) - $LOGS_TO_KEEP)
+    # arithmetic, not `expr`: `expr` exits 1 when the result is 0 (fatal under set -e)
+    REMOVE=$(( $(ls -1rt "$LOGDIR" | wc -l) - LOGS_TO_KEEP ))
     if [ "$REMOVE" -gt 0 ]; then
         for i in $(ls -1rt "$LOGDIR" | head -n "$REMOVE");
         do

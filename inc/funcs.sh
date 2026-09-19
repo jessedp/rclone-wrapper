@@ -19,10 +19,12 @@ shouldRun() {
             LAST=$(stat -c %Y "$LASTFILE")
         fi
 
-        DIFF=$(expr "$NOW" - "$LAST")
-        HR_DIFF=$(expr "$DIFF" / 60 / 60)
+        # NB: arithmetic, not `expr` - `expr` exits 1 when the result is 0, which
+        # kills the script under `set -e`.
+        DIFF=$(( NOW - LAST ))
+        HR_DIFF=$(( DIFF / 60 / 60 ))
         if [ "$HR_DIFF" -lt "$MIN_HOURS" ]; then
-            log "Only $HR_DIFF hours have elapsed since the last backup. Waiting for at least $(expr "$MIN_HOURS" - "$HR_DIFF") hours before running again."
+            log "Only $HR_DIFF hours have elapsed since the last backup. Waiting for at least $(( MIN_HOURS - HR_DIFF )) hours before running again."
             exit
         fi
     fi
@@ -99,44 +101,46 @@ backup() {
         NICE_CMD="sudo nice -n $NICE"
     fi
 
-    (set -x; \
-    /usr/bin/time -v -o $LOGFILE -a \
-        $NICE_CMD -n "$NICE" rclone sync "$SOURCE_PATH" "$DESTINATION_PATH" \
-        --config "$RCLONE_CONFIG_PATH" \
-        --delete-excluded \
-        --filter-from "$SCRIPT_HOME/config/$FILTER_FILE" \
-        --log-file="$LOGFILE" \
-        --log-level INFO \
-        --track-renames \
-        --skip-links \
-        --stats-log-level DEBUG \
-        --update >> $LOGFILE;
-    )
+    # The rclone call sits inside an `if` so that a non-zero exit reaches the
+    # FAILURE branch instead of aborting the whole script via `set -e` (which
+    # used to skip finish()/notifyFailure() entirely, i.e. failures were silent).
+    if (set -x; \
+        /usr/bin/time -v -o "$LOGFILE" -a \
+        $NICE_CMD rclone sync "$SOURCE_PATH" "$DESTINATION_PATH" \
+            --config "$RCLONE_CONFIG_PATH" \
+            --delete-excluded \
+            --filter-from "$SCRIPT_HOME/config/$FILTER_FILE" \
+            --log-file="$LOGFILE" \
+            --log-level INFO \
+            --track-renames \
+            --skip-links \
+            --stats-log-level DEBUG \
+            --update >> "$LOGFILE"
+    ); then
+        log "FINISHED BACKUP - ${SOURCE_PATH} dirs"
+    else
+        local RC=$?
+        FAILURE=1
+        log "BACKUP FAILED - ${SOURCE_PATH} dirs - rclone exit code ${RC}"
+    fi
 
     #  --backup-dir=$ARCHIVE_DESTINATION_PATH \
     #  -vvv
     #  --dry-run  -vvv
-
-    if [ $? != 0 ]; then
-        FAILURE=1
-        log "BACKUP FAILED - ${SOURCE_PATH} dirs  - ${?}"
-    else
-        log "FINISHED BACKUP - ${SOURCE_PATH} dirs"
-    fi
 }
 
 # if configured, try to email you/someone if there's a problem with the backups
 notifyFailure() {
     if [ -z "$(which curl)" ]; then
         log "curl not found, can't send notifications!"
-    elif [ -n "$MAILGUN_APIKEY" ]; then
+    elif [ -n "${MAILGUN_APIKEY:-}" ] && [ "$MAILGUN_APIKEY" != "key-MYKEY" ]; then
         log "Attempting to notify about backup problem..."
-        RESULT=`curl -o /dev/null -s -w "%{http_code}\n" --user "api:$MAILGUN_APIKEY" \
+        RESULT=$(curl -o /dev/null -s -w "%{http_code}\n" --user "api:$MAILGUN_APIKEY" \
             https://api.mailgun.net/v3/"$MAILGUN_DOMAIN"/messages \
-            -F from=$MAILGUN_FROM \
-            -F to=$MAILGUN_TO \
+            -F from="$MAILGUN_FROM" \
+            -F to="$MAILGUN_TO" \
             -F subject="$MAILGUN_SUBJECT" \
-            -F text="$(cat "$LOGFILE")" `
+            -F text="$(cat "$LOGFILE")" || true)
 
         if [[ $RESULT == 2* ]]; then
             log "Error email sent"
@@ -148,10 +152,50 @@ notifyFailure() {
     fi
 }
 
+# Dead-man's switch: GET a monitor URL after every completed run so that a
+# machine that stops running backups at all gets noticed. Works with anything
+# that accepts a plain GET (uptime-kuma push monitors, healthchecks.io, ...).
+# Both URLs are optional; set them in inc/local.sh.
+pingMonitor() {
+    local URL="${PUSH_URL_OK:-}"
+    if [ "$FAILURE" == 1 ]; then
+        URL="${PUSH_URL_FAIL:-}"
+    fi
+    if [ -z "$URL" ]; then
+        return 0
+    fi
+    if [ -z "$(which curl)" ]; then
+        log "curl not found, can't ping monitor!"
+        return 0
+    fi
+    if curl -fsS -m 15 --retry 2 -o /dev/null "$URL"; then
+        log "Monitor pinged: $(basename "${URL%%\?*}")"
+    else
+        log "UNABLE to reach monitor URL: $URL"
+    fi
+}
+
 
 finish() {
-    touch "$LASTFILE"
     if [ $FAILURE == 1 ]; then
+        # Don't touch LASTFILE: the next scheduled run retries instead of
+        # waiting MIN_HOURS on top of a failure.
+        log "Run had failures; leaving $(basename "$LASTFILE") alone so the next run retries."
         notifyFailure
+    else
+        touch "$LASTFILE"
+    fi
+    pingMonitor
+}
+
+# Anything unexpected that trips `set -e` (bad config, missing binary, ...)
+# still gets reported rather than dying silently.
+onUnexpectedExit() {
+    local RC=$?
+    if [ "$RC" != 0 ] && [ "$FAILURE" != 1 ]; then
+        FAILURE=1
+        log "UNEXPECTED EXIT (code $RC) at line ${BASH_LINENO[0]:-?} - backup did not complete"
+        notifyFailure
+        pingMonitor
     fi
 }

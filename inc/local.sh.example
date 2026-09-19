@@ -1,0 +1,14 @@
+# Optional per-machine overrides, sourced after defaults.sh. Copy to inc/local.sh
+# (git-ignored) so real keys/URLs never end up in the repo.
+
+# MAILGUN_DOMAIN="example.net"
+# MAILGUN_APIKEY="key-MYKEY"
+# MAILGUN_FROM="support@example.org"
+# MAILGUN_TO="me@example.com"
+
+# Dead-man's switch: GET after every run. uptime-kuma push monitor example:
+# PUSH_URL_OK="http://kuma.example:3001/api/push/TOKEN?status=up&msg=OK&ping="
+# PUSH_URL_FAIL="http://kuma.example:3001/api/push/TOKEN?status=down&msg=backup+failed&ping="
+# healthchecks.io example:
+# PUSH_URL_OK="https://hc-ping.com/UUID"
+# PUSH_URL_FAIL="https://hc-ping.com/UUID/fail"

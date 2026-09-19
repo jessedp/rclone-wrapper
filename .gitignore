@@ -2,3 +2,4 @@
 logs/
 config/*.sh
 config/*.txt
+inc/local.sh

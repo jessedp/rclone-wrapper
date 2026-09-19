@@ -46,6 +46,12 @@ It's quite opinionated, but could give someone a structure to (mis)use for their
 3. Peruse the `inc/defaults.sh` file and make any changes you feel necessary.
     -   hopefully the MAILGUN_* params are self-explanatory
 
+### failure handling & monitoring ###
+- A non-zero exit from any `rclone sync` marks the run failed: the remaining sets still run, `.lastrun` is **not** touched (so the next scheduled run retries instead of waiting `MIN_HOURS`), and the Mailgun notification goes out with the log attached.
+- Anything else that blows up (`set -e`) is caught by an `ERR` trap and reported the same way instead of dying silently.
+- Optional dead-man's switch: set `PUSH_URL_OK` / `PUSH_URL_FAIL` and the script GETs one of them at the end of every run (uptime-kuma push monitors, healthchecks.io, anything that takes a plain GET).
+- Put secrets and per-machine values (Mailgun key, push URLs) in `inc/local.sh` — it is sourced after `inc/defaults.sh` and git-ignored. See `inc/local.sh.example`.
+
 #### config files ####
 Each "set" or "bucket" (my terms) consists of a **config** and a **filter**. Again, both of these must live in the `config/` directory. When the backup script runs, it will process **all** `.sh` files there.
 
